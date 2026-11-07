@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="ReciclaBrasil v2.0 — Mapeamento colaborativo auditado de pontos de reciclagem, observatório de lixo eletrônico (e-waste) e vitrine de iniciativas globais.">
+  <meta name="theme-color" content="#059669">
+
+  <title>ReciclaBrasil v2.0 — Pontos de Reciclagem & Observatório de E-Waste</title>
+
+  <!-- Folha de Estilos do Mapa Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+
+  <!-- Folha de Estilos Customizada v2.0 -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ========================================================================
+       Cabeçalho e Navegação Principal
+       ======================================================================== -->
+  <header class="header">
+    <div class="container header-content">
+      <!-- Logotipo com Badge da Versão 2.0 -->
+      <a href="#inicio" class="logo" aria-label="ReciclaBrasil Página Inicial">
+        <div class="logo-icon">♻️</div>
+        <span>ReciclaBrasil</span>
+        <span class="logo-badge">v2.0</span>
+      </a>
+
+      <!-- Menu de Navegação Superior -->
+      <nav aria-label="Navegação Principal">
+        <ul class="nav-links" id="nav-links">
+          <li><a href="#inicio" class="nav-link active">Início</a></li>
+          <li><a href="#mapa" class="nav-link">Mapa de Coleta</a></li>
+          <li><a href="#ewaste-cenario" class="nav-link">Lixo Eletrônico</a></li>
+          <li><a href="#iniciativas" class="nav-link">Iniciativas</a></li>
+          <li><a href="#calculadora" class="nav-link">Impacto</a></li>
+          <li><a href="#guia" class="nav-link">Guia CONAMA</a></li>
+        </ul>
+      </nav>
+
+      <!-- Ações do Cabeçalho: Botão de Auditoria e Sugerir Ponto -->
+      <div class="header-actions">
+        <!-- Botão do Painel de Auditoria com Contador de Pendências -->
+        <button class="btn-audit" onclick="abrirPainelAuditoria()" title="Painel de Auditoria e Validação de Pontos">
+          <span>🛡️ Auditoria</span>
+          <span class="badge-counter" id="badge-pendentes" style="display: none;">0</span>
+        </button>
+
+        <!-- Botão de Cadastro Público -->
+        <button class="btn btn-primary btn-sm" onclick="abrirModalCadastro()" aria-label="Sugerir novo ponto de coleta">
+          <span>➕</span> Sugerir Ponto
+        </button>
+
+        <!-- Alternador de Menu para Telas Menores -->
+        <button class="menu-toggle" id="menu-toggle" aria-label="Abrir Menu">
+          ☰
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- ======================================================================
+         Seção Hero (Apresentação v2.0 e Métricas Principais)
+         ====================================================================== -->
+    <section class="hero" id="inicio">
+      <div class="container">
+        <div class="hero-tag">
+          🌱 Versão 2.0 • Mapeamento Auditado & Observatório E-Waste
+        </div>
+
+        <h1 class="hero-title">
+          Reciclagem Confiável & <span class="tech">Lixo Eletrônico</span> <span class="eco">no Brasil</span>
+        </h1>
+
+        <p class="hero-subtitle">
+          Plataforma colaborativa com validação humana de ecopontos, panorama oficial da geração de resíduos eletroeletrônicos no Brasil e no mundo, e conexões diretas com as maiores iniciativas do setor.
+        </p>
+
+        <!-- Estatísticas Gerais em Cartões Rápidos -->
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span class="stat-number" id="stat-pontos">16</span>
+            <span class="stat-label">Pontos Auditados</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number" id="stat-cidades">10</span>
+            <span class="stat-label">Cidades Atendidas</span>
+          </div>
+          <div class="stat-item tech">
+            <span class="stat-number">2,5 M</span>
+            <span class="stat-label">Ton E-lixo / Ano (BR)</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number" id="stat-pendentes" style="color: var(--accent-amber);">3</span>
+            <span class="stat-label">Em Fila de Auditoria</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         Painel de Busca e Filtros Interativos
+         ====================================================================== -->
+    <section class="search-filter-section" id="filtros">
+      <div class="container">
+        <div class="search-bar-wrap">
+          <!-- Campo de Busca Textual Instantânea -->
+          <div class="search-input-group">
+            <span class="search-icon">🔍</span>
+            <input type="text" 
+                   id="search-input" 
+                   class="search-input" 
+                   placeholder="Buscar por bairro, endereço ou nome do ecoponto..." 
+                   aria-label="Buscar pontos de coleta">
+          </div>
+
+          <!-- Seletor Dinâmico de Cidades -->
+          <select id="city-select" class="city-select" aria-label="Filtrar por cidade">
+            <option value="todas">Todas as Cidades</option>
+          </select>
+
+          <!-- Alternador de Modos de Visualização -->
+          <div class="view-mode-toggle" role="group" aria-label="Alternar exibição">
+            <button class="view-btn active" data-mode="split" title="Visualização Dividida">Dividido</button>
+            <button class="view-btn" data-mode="map" title="Apenas Mapa">Mapa</button>
+            <button class="view-btn" data-mode="list" title="Apenas Lista">Lista</button>
+          </div>
+        </div>
+
+        <!-- Chips de Seleção de Categorias com Destaque para Eletrônicos -->
+        <div class="category-chips" id="category-chips" role="tablist" aria-label="Filtrar por material">
+          <!-- Gerado via JavaScript -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         Seção Principal: Mapa Interativo e Lista de Ecopontos Auditados
+         ====================================================================== -->
+    <section class="map-view-section" id="mapa">
+      <div class="container">
+        <div class="app-grid">
+          
+          <!-- Coluna 1: Mapa Georreferenciado -->
+          <div class="map-card">
+            <div class="map-card-header">
+              <div class="map-card-title">
+                <span>🗺️</span> Mapa de Pontos Auditados
+              </div>
+              <span style="font-size: 0.85rem; color: var(--text-muted);">
+                Pinos roxos: aceitam lixo eletrônico
+              </span>
+            </div>
+
+            <div class="map-fallback-banner" id="map-fallback">
+              ℹ️ O mapa interativo requer conexão para carregar os azulejos do OpenStreetMap. Todas as buscas, filtros e informações funcionam normalmente na lista ao lado!
+            </div>
+
+            <div id="map"></div>
+          </div>
+
+          <!-- Coluna 2: Lista de Pontos Auditados -->
+          <div class="points-list-pane">
+            <div class="points-header-bar">
+              <div class="points-counter">
+                Mostrando <span id="points-count">0</span> locais validados
+              </div>
+            </div>
+
+            <!-- Contêiner de Cards de Pontos -->
+            <div id="points-list">
+              <!-- Gerado via JavaScript -->
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         NOVO: Observatório do Cenário do Lixo Eletrônico (Brasil & Mundo)
+         ====================================================================== -->
+    <section class="ewaste-section" id="ewaste-cenario">
+      <div class="container">
+        <div class="ewaste-header">
+          <div class="ewaste-badge">📊 Observatório Oficial de E-Waste</div>
+          <h2>O Cenário do Lixo Eletrônico: Brasil vs Mundo</h2>
+          <p>
+            O lixo eletrônico é a fração de resíduos que mais cresce no planeta. Dados consolidados pelo <em>The Global E-waste Monitor</em> (ONU/UNITAR/ITU) revelam a urgência da reciclagem especializada.
+          </p>
+        </div>
+
+        <!-- Comparativo Brasil x Mundo -->
+        <div class="comparison-grid">
+          
+          <!-- Card Brasil -->
+          <div class="scope-card brasil">
+            <div class="scope-card-top">
+              <div class="scope-title">
+                <span>🇧🇷</span>
+                <h3>Brasil</h3>
+              </div>
+              <span class="scope-badge">5º Maior Gerador Mundial</span>
+            </div>
+
+            <div class="metric-row">
+              <span class="metric-label">📦 Geração Total Anual:</span>
+              <span class="metric-value" id="ewaste-br-ton">2.500.000 ton</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">👤 Geração Média por Habitante:</span>
+              <span class="metric-value" id="ewaste-br-capita">10,2 kg/hab</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">🌎 Posição nas Américas:</span>
+              <span class="metric-value">2º lugar (após EUA)</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">💰 Valor Econômico Desperdiçado:</span>
+              <span class="metric-value" id="ewaste-br-valor" style="color: #b91c1c; font-size: 1rem;">R$ 1,5 bilhão/ano</span>
+            </div>
+
+            <!-- Barra de Progresso Taxa de Reciclagem Brasil -->
+            <div class="progress-wrap">
+              <div class="progress-header">
+                <span>Taxa de Reciclagem Formal:</span>
+                <span id="ewaste-br-taxa" style="color: #b91c1c;">~3,0%</span>
+              </div>
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="ewaste-br-taxa-bar" style="width: 3%;"></div>
+              </div>
+              <small style="color: var(--text-light); display: block; margin-top: 4px;">
+                97% do e-lixo brasileiro não passa por reciclagem formal certificada.
+              </small>
+            </div>
+          </div>
+
+          <!-- Card Mundo -->
+          <div class="scope-card mundo">
+            <div class="scope-card-top">
+              <div class="scope-title">
+                <span>🌐</span>
+                <h3>Mundo</h3>
+              </div>
+              <span class="scope-badge">Métrica Global da ONU</span>
+            </div>
+
+            <div class="metric-row">
+              <span class="metric-label">📦 Geração Global Anual:</span>
+              <span class="metric-value" id="ewaste-mu-ton">62.000.000 ton</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">👤 Média Global por Habitante:</span>
+              <span class="metric-value" id="ewaste-mu-capita">7,8 kg/hab</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">📈 Crescimento da Geração:</span>
+              <span class="metric-value" id="ewaste-mu-cresc">+2,6 milhões ton/ano</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">💎 Matérias-Primas Perdidas:</span>
+              <span class="metric-value" id="ewaste-mu-valor" style="color: var(--tech-600); font-size: 1rem;">US$ 91 bilhões/ano</span>
+            </div>
+
+            <!-- Barra de Progresso Taxa de Reciclagem Mundo -->
+            <div class="progress-wrap">
+              <div class="progress-header">
+                <span>Taxa de Coleta e Reciclagem Documentada:</span>
+                <span id="ewaste-mu-taxa" style="color: var(--tech-600);">22,3%</span>
+              </div>
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="ewaste-mu-taxa-bar" style="width: 22.3%;"></div>
+              </div>
+              <small style="color: var(--text-light); display: block; margin-top: 4px;">
+                Apenas 1/5 do e-lixo mundial é recolhido e reciclado de forma documentada.
+              </small>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Destaque: Metais Perigosos (Riscos) vs Minerais Valiosos (Oportunidades) -->
+        <div class="ewaste-details-grid">
+          <!-- Bloco 1: Riscos Tóxicos -->
+          <div class="detail-block">
+            <h3 class="detail-block-title" style="color: #b91c1c;">
+              <span>☣️</span> Riscos de Descarte Inadequado (Metais Pesados)
+            </h3>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
+              Quando jogados no lixo comum, os eletrônicos liberam substâncias altamente tóxicas no solo e no lençol freático:
+            </p>
+            <div class="metal-items-list" id="ewaste-perigosos-list">
+              <!-- Gerado via JavaScript -->
+            </div>
+          </div>
+
+          <!-- Bloco 2: Minerais Valiosos e Economia Circular -->
+          <div class="detail-block">
+            <h3 class="detail-block-title" style="color: var(--tech-700);">
+              <span>💎</span> Potencial de Economia Circular e Mineração Urbana
+            </h3>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
+              A reciclagem de placas e componentes recupera minerais raros sem a necessidade de mineração predatória:
+            </p>
+            <div class="metal-items-list" id="ewaste-preciosos-list">
+              <!-- Gerado via JavaScript -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         NOVO: Cards de Iniciativas Oficiais (Brasil & Mundo)
+         ====================================================================== -->
+    <section class="initiatives-section" id="iniciativas">
+      <div class="container">
+        <div class="initiatives-header">
+          <h2>Principais Iniciativas e Organizações de E-Waste</h2>
+          <p style="color: var(--text-muted); font-size: 1.05rem;">
+            Conheça as entidades, gestoras de logística reversa e organizações globais que lideram a causa no Brasil e no mundo, com links oficiais para acesso direto.
+          </p>
+        </div>
+
+        <!-- Filtros Rápidos de Escopo (Todas / Brasil / Mundo) -->
+        <div class="initiatives-filters">
+          <button class="init-filter-btn active" data-scope="todos">Todas as Iniciativas</button>
+          <button class="init-filter-btn" data-scope="brasil">🇧🇷 Brasil</button>
+          <button class="init-filter-btn" data-scope="mundo">🌐 Internacionais</button>
+        </div>
+
+        <!-- Grid de Cards de Iniciativas -->
+        <div class="initiatives-grid" id="initiatives-grid">
+          <!-- Gerado via JavaScript -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         Calculadora de Impacto Ecológico (Atualizada com E-Waste)
+         ====================================================================== -->
+    <section class="container" id="calculadora">
+      <div class="impact-section">
+        <div class="container">
+          <div class="impact-header">
+            <h2>Calculadora de Impacto Ambiental 🌍</h2>
+            <p>
+              Simule a economia de água, árvores preservadas, redução de emissões de CO₂ e energia elétrica poupada com a sua reciclagem (agora incluindo eletroeletrônicos):
+            </p>
+          </div>
+
+          <div class="calculator-wrapper">
+            <!-- Entradas de Dados -->
+            <div class="calc-inputs">
+              <div class="calc-field">
+                <label for="calc-ewaste">💻 Lixo Eletrônico / Celulares / Peças (kg)</label>
+                <input type="number" id="calc-ewaste" class="calc-input" value="4" min="0" step="1">
+              </div>
+              <div class="calc-field">
+                <label for="calc-papel">📄 Papel / Papelão (kg)</label>
+                <input type="number" id="calc-papel" class="calc-input" value="10" min="0" step="1">
+              </div>
+              <div class="calc-field">
+                <label for="calc-plastico">🧴 Plásticos (kg)</label>
+                <input type="number" id="calc-plastico" class="calc-input" value="5" min="0" step="1">
+              </div>
+              <div class="calc-field">
+                <label for="calc-vidro">🍾 Vidros (kg)</label>
+                <input type="number" id="calc-vidro" class="calc-input" value="8" min="0" step="1">
+              </div>
+              <div class="calc-field">
+                <label for="calc-metal">🥫 Metais / Alumínio (kg)</label>
+                <input type="number" id="calc-metal" class="calc-input" value="3" min="0" step="1">
+              </div>
+            </div>
+
+            <!-- Resultados Dinâmicos Calculados -->
+            <div class="calc-results-grid">
+              <div class="result-box">
+                <div class="result-icon">💧</div>
+                <div class="result-value" id="res-agua">0 L</div>
+                <div class="result-label">Litros de Água Poupados</div>
+              </div>
+              <div class="result-box">
+                <div class="result-icon">🌲</div>
+                <div class="result-value" id="res-arvores">0 unid.</div>
+                <div class="result-label">Árvores Preservadas</div>
+              </div>
+              <div class="result-box">
+                <div class="result-icon">☁️</div>
+                <div class="result-value" id="res-co2">0 kg</div>
+                <div class="result-label">CO₂ Evitado na Atmosfera</div>
+              </div>
+              <div class="result-box">
+                <div class="result-icon">⚡</div>
+                <div class="result-value" id="res-energia">0 kWh</div>
+                <div class="result-label">Energia Elétrica Economizada</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         Guia de Coleta Seletiva CONAMA
+         ====================================================================== -->
+    <section class="guide-section" id="guia">
+      <div class="container">
+        <div class="section-title-wrap">
+          <h2 class="section-title">Guia de Separação de Resíduos (Resolução CONAMA)</h2>
+          <p class="section-desc">Identifique a destinação correta por cor de lixeira e evite a contaminação dos recicláveis.</p>
+        </div>
+
+        <div class="guide-grid">
+          <!-- Card Azul: Papel -->
+          <article class="guide-card" style="border-top-color: #2563eb;">
+            <div class="guide-card-top">
+              <div class="guide-icon-box">📄</div>
+              <div>
+                <h3 class="guide-material-title">Papel e Papelão</h3>
+                <span class="guide-color-pill" style="background: #2563eb;">Lixeira Azul</span>
+              </div>
+            </div>
+            <ul class="guide-list">
+              <li>Caixas de papelão desmontadas</li>
+              <li>Folhas, cadernos e impressões</li>
+              <li>Revistas e embalagens limpas</li>
+            </ul>
+            <ul class="guide-list donts">
+              <li>Papel higiênico ou guardanapo usado</li>
+              <li>Papel carbono ou metalizado</li>
+            </ul>
+          </article>
+
+          <!-- Card Vermelho: Plástico -->
+          <article class="guide-card" style="border-top-color: #dc2626;">
+            <div class="guide-card-top">
+              <div class="guide-icon-box">🧴</div>
+              <div>
+                <h3 class="guide-material-title">Plásticos</h3>
+                <span class="guide-color-pill" style="background: #dc2626;">Lixeira Vermelha</span>
+              </div>
+            </div>
+            <ul class="guide-list">
+              <li>Garrafas PET e potes limpos</li>
+              <li>Embalagens de produtos de limpeza</li>
+              <li>Tampinhas e tubos plásticos</li>
+            </ul>
+            <ul class="guide-list donts">
+              <li>Cabos de panela e tomadas</li>
+              <li>Plásticos com resíduos orgânicos</li>
+            </ul>
+          </article>
+
+          <!-- Card Amarelo: Metal -->
+          <article class="guide-card" style="border-top-color: #ca8a04;">
+            <div class="guide-card-top">
+              <div class="guide-icon-box">🥫</div>
+              <div>
+                <h3 class="guide-material-title">Metais</h3>
+                <span class="guide-color-pill" style="background: #ca8a04;">Lixeira Amarela</span>
+              </div>
+            </div>
+            <ul class="guide-list">
+              <li>Latas de alumínio e refrigerante</li>
+              <li>Latas de conserva e tampinhas</li>
+              <li>Panelas sem cabo e ferragens</li>
+            </ul>
+            <ul class="guide-list donts">
+              <li>Esponjas de aço e grampos</li>
+              <li>Pilhas e baterias (descarte especial)</li>
+            </ul>
+          </article>
+
+          <!-- Card Verde: Vidro -->
+          <article class="guide-card" style="border-top-color: #16a34a;">
+            <div class="guide-card-top">
+              <div class="guide-icon-box">🍾</div>
+              <div>
+                <h3 class="guide-material-title">Vidros</h3>
+                <span class="guide-color-pill" style="background: #16a34a;">Lixeira Verde</span>
+              </div>
+            </div>
+            <ul class="guide-list">
+              <li>Garrafas de bebidas e potes de molho</li>
+              <li>Frascos de cosméticos e remédios</li>
+              <li>Copos de vidro (embalar se quebrados)</li>
+            </ul>
+            <ul class="guide-list donts">
+              <li>Espelhos e vidros automotivos</li>
+              <li>Cristais e lâmpadas fluorescentes</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ========================================================================
+       NOVO: Modal do Painel de Auditoria e Moderação de Pontos
+       ======================================================================== -->
+  <div class="audit-modal-overlay" id="modal-auditoria" role="dialog" aria-modal="true" aria-labelledby="audit-title">
+    <div class="audit-modal-window">
+      <div class="audit-modal-header">
+        <div class="audit-modal-title" id="audit-title">
+          <span>🛡️</span>
+          <span>Painel de Auditoria e Moderação (<span id="audit-queue-count">0</span>)</span>
+        </div>
+        <button class="modal-close-btn" onclick="fecharPainelAuditoria()" aria-label="Fechar painel">✖</button>
+      </div>
+
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.88rem; color: #475569;">
+        <strong>Instruções do Auditor:</strong> Novos pontos sugeridos pelos usuários ficam retidos aqui. Revise as coordenadas, endereço e materiais antes de validar. Ao clicar em <strong>"Validar e Publicar"</strong>, o ponto entra imediatamente no mapa público e na lista de ecopontos da plataforma.
+      </div>
+
+      <!-- Fila de Itens Pendentes para Análise -->
+      <div class="audit-queue-list" id="audit-queue-list">
+        <!-- Renderizado dinamicamente via JavaScript -->
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 1.75rem;">
+        <button class="btn btn-outline" onclick="fecharPainelAuditoria()">Fechar Painel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       Modal Público para Sugerir Novo Ponto (Envia para Auditoria)
+       ======================================================================== -->
+  <div class="modal-overlay" id="modal-cadastro" role="dialog" aria-modal="true" aria-labelledby="modal-cadastro-title">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-cadastro-title">Sugerir Ponto de Coleta</h3>
+        <button class="modal-close-btn" onclick="fecharModalCadastro()" aria-label="Fechar">✖</button>
+      </div>
+
+      <div class="notice-box">
+        <span>🛡️</span>
+        <span>
+          <strong>Processo Auditado:</strong> Sua sugestão passará por verificação da moderação antes de ser publicada no mapa oficial.
+        </span>
+      </div>
+
+      <form id="form-cadastro-ponto">
+        <div class="form-group">
+          <label for="input-nome">Nome do Local ou Ecoponto *</label>
+          <input type="text" id="input-nome" name="nome" class="form-control" placeholder="Ex: PEV Sustentável Parque Central" required>
+        </div>
+
+        <div class="form-group">
+          <label for="input-endereco">Endereço Completo (com Bairro e Cidade/UF) *</label>
+          <input type="text" id="input-endereco" name="endereco" class="form-control" placeholder="Ex: Av. Brasil, 500 – Jardim América, Campinas/SP" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="input-lat">Latitude *</label>
+            <input type="number" id="input-lat" name="lat" step="any" class="form-control" placeholder="Ex: -22.9056" required>
+          </div>
+          <div class="form-group">
+            <label for="input-lng">Longitude *</label>
+            <input type="number" id="input-lng" name="lng" step="any" class="form-control" placeholder="Ex: -47.0608" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="input-horario">Horário de Atendimento</label>
+            <input type="text" id="input-horario" name="horario" class="form-control" placeholder="Ex: Seg–Sáb 8h–18h">
+          </div>
+          <div class="form-group">
+            <label for="input-telefone">Telefone / WhatsApp</label>
+            <input type="text" id="input-telefone" name="telefone" class="form-control" placeholder="Ex: (19) 3000-0000">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="input-responsavel">Seu Nome ou Instituição</label>
+            <input type="text" id="input-responsavel" name="responsavel" class="form-control" placeholder="Ex: Maria Pereira (Moradora)">
+          </div>
+          <div class="form-group">
+            <label for="input-observacoes">Observações para o Auditor</label>
+            <input type="text" id="input-observacoes" name="observacoes" class="form-control" placeholder="Ex: Ponto com coletor para pilhas e celulares">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Materiais que o Local Aceita *</label>
+          <div class="checkbox-materials-grid">
+            <label class="checkbox-chip">
+              <input type="checkbox" name="categorias" value="eletronico" checked> 💻 Lixo Eletrônico
+            </label>
+            <label class="checkbox-chip">
+              <input type="checkbox" name="categorias" value="pilhas" checked> 🔋 Pilhas/Baterias
+            </label>
+            <label class="checkbox-chip">
+              <input type="checkbox" name="categorias" value="papel"> 📄 Papelão
+            </label>
+            <label class="checkbox-chip">
+              <input type="checkbox" name="categorias" value="plastico"> 🧴 Plásticos
+            </label>
+            <label class="checkbox-chip">
+              <input type="checkbox" name="categorias" value="metal"> 🥫 Metais
+            </label>
+            <label class="checkbox-chip">
+              <input type="checkbox" name="categorias" value="vidro"> 🍾 Vidros
+            </label>
+            <label class="checkbox-chip">
+              <input type="checkbox" name="categorias" value="oleo"> 🛢️ Óleo
+            </label>
+            <label class="checkbox-chip">
+              <input type="checkbox" name="categorias" value="organico"> 🌿 Orgânicos
+            </label>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+          <button type="button" class="btn btn-outline" onclick="fecharModalCadastro()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Enviar para Auditoria</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       Modal de Edição de Ponto Pendente (Uso do Auditor)
+       ======================================================================== -->
+  <div class="modal-overlay" id="modal-edicao" role="dialog" aria-modal="true" aria-labelledby="modal-edicao-title">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-edicao-title">Editar Dados Antes de Aprovar</h3>
+        <button class="modal-close-btn" onclick="fecharModalEdicao()" aria-label="Fechar">✖</button>
+      </div>
+
+      <form id="form-editar-ponto">
+        <div class="form-group">
+          <label for="edit-nome">Nome do Local *</label>
+          <input type="text" id="edit-nome" name="nome" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-endereco">Endereço Completo *</label>
+          <input type="text" id="edit-endereco" name="endereco" class="form-control" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit-lat">Latitude *</label>
+            <input type="number" id="edit-lat" name="lat" step="any" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label for="edit-lng">Longitude *</label>
+            <input type="number" id="edit-lng" name="lng" step="any" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit-horario">Horário de Atendimento</label>
+            <input type="text" id="edit-horario" name="horario" class="form-control">
+          </div>
+          <div class="form-group">
+            <label for="edit-telefone">Telefone</label>
+            <input type="text" id="edit-telefone" name="telefone" class="form-control">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Materiais Aceitos *</label>
+          <div class="checkbox-materials-grid">
+            <label class="checkbox-chip">
+              <input type="checkbox" name="categorias" value="eletronico"> 💻 Eletrônico
+            </label>
+            <label class="checkbox-chip">
+              <input type="checkbox" name="categorias" value="pilhas"> 🔋 Pilhas
+            </label>
+            <label class="checkbox-chip">
+              <input type="checkbox" name="categorias" value="papel"> 📄 Papel
+            </label>
+            <label class="checkbox-chip">
+              <input type="checkbox" name="categorias" value="plastico"> 🧴 Plástico
+            </label>
+            <label class="checkbox-chip">
+              <input type="checkbox" name="categorias" value="metal"> 🥫 Metal
+            </label>
+            <label class="checkbox-chip">
+              <input type="checkbox" name="categorias" value="vidro"> 🍾 Vidro
+            </label>
+            <label class="checkbox-chip">
+              <input type="checkbox" name="categorias" value="oleo"> 🛢️ Óleo
+            </label>
+            <label class="checkbox-chip">
+              <input type="checkbox" name="categorias" value="organico"> 🌿 Orgânico
+            </label>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+          <button type="button" class="btn btn-outline" onclick="fecharModalEdicao()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Contêiner Flutuante de Toasts de Notificação -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- ========================================================================
+       Rodapé da Aplicação v2.0
+       ======================================================================== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="logo" style="color: white;">
+            <div class="logo-icon">♻️</div>
+            <span>ReciclaBrasil</span>
+            <span class="logo-badge" style="background: var(--tech-600);">v2.0</span>
+          </div>
+          <p>
+            Plataforma colaborativa com validação auditada de ecopontos, dedicada a mapear a infraestrutura de reciclagem e combater o descarte inadequado de lixo eletrônico em todo o Brasil.
+          </p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Navegação</h4>
+          <ul>
+            <li><a href="#inicio">Início</a></li>
+            <li><a href="#mapa">Mapa de Pontos</a></li>
+            <li><a href="#ewaste-cenario">Observatório E-Waste</a></li>
+            <li><a href="#iniciativas">Iniciativas Globais</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Auditoria & Gestão</h4>
+          <ul>
+            <li><a href="javascript:void(0)" onclick="abrirPainelAuditoria()">Painel de Moderação</a></li>
+            <li><a href="javascript:void(0)" onclick="abrirModalCadastro()">Sugerir Ecoponto</a></li>
+            <li><a href="#calculadora">Calculadora de Impacto</a></li>
+            <li><a href="#guia">Padrão CONAMA</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Fontes & Parcerias</h4>
+          <ul>
+            <li><a href="https://ewastemonitor.info" target="_blank" rel="noopener">Global E-waste Monitor ↗</a></li>
+            <li><a href="https://greeneletron.org.br" target="_blank" rel="noopener">Green Eletron ↗</a></li>
+            <li><a href="https://abree.org.br" target="_blank" rel="noopener">ABREE Brasil ↗</a></li>
+            <li><a href="https://weee-forum.org" target="_blank" rel="noopener">WEEE Forum Internacional ↗</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p>&copy; 2026 ReciclaBrasil v2.0. Desenvolvido para rodar localmente com código limpo, auditado e responsivo.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts: Leaflet JS, Base de Dados v2 e Lógica Principal -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
