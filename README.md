@@ -1,8 +1,8 @@
-# ♻️ ReciclaBrasil v2.0 — Plataforma Auditada de Reciclagem & Observatório de E-Waste
+# ♻️ ReciclaBrasil v3.0 — Plataforma Auditada de Reciclagem & Observatório de E-Waste
 
 Uma plataforma web moderna, acessível, responsiva e completa para mapeamento de ecopontos de reciclagem e conscientização sobre o descarte responsável de resíduos, com foco especial em **Lixo Eletrônico (E-Waste)**.
 
-A versão **2.0** traz um sistema completo de **Auditoria e Moderação Administrativa** para aprovação de novos pontos cadastrados pela comunidade, persistência com **LocalStorage**, **Observatório de E-Waste (Brasil vs. Mundo)**, integração de iniciativas globais com links oficiais e calculadora de impacto ecológico.
+A versão **3.0** traz um sistema completo de **Auditoria e Moderação Administrativa** para aprovação de novos pontos cadastrados pela comunidade, persistência com **LocalStorage**, **Observatório de E-Waste (Brasil vs. Mundo)**, integração de iniciativas globais com links oficiais e calculadora de impacto ecológico.
 
 ---
 
